@@ -1,4 +1,4 @@
-// Sub-Store 终极清洗、高延迟拦截与规范重命名脚本
+// Sub-Store 终极黑名单拦截与规范重命名脚本
 let list = [];
 
 // 1. 安全获取节点数据
@@ -24,10 +24,18 @@ if (!Array.isArray(list) || list.length === 0) {
     return typeof $nodes !== 'undefined' ? $nodes : (typeof proxies !== 'undefined' ? proxies : []);
 }
 
-// ==================== 第一部分：垃圾、死节点与高延迟（>400ms）过滤 ====================
+// ==================== 第一部分：垃圾、死节点与已知高延迟服务器黑名单过滤 ====================
 const excludeNameRegex = /(到期|剩余|流量|官网|网址|联系|发布页|客服|重置|过期|测速|群|Telegram|TG|VIP|电报|更新|日期|免费VPN|free-nodes)/i;
 const excludeErrorRegex = /(timeout|error|403|forbidden|blocked|1016|failed|refused|unreachable|0ms|nan|offline|down)/i;
 const excludeReturnRegex = /(回国|大陆专用|解锁CN|学术|教育网)/i;
+
+// 【核心黑名单】：把你测试下来经常超时、延迟高的服务器 IP 或域名填在这里，直接永久拉黑！
+const badServerBlacklist = [
+    "107.172.250.191", // 经常超时的美国节点
+    "166.0.192.239",   // 延迟高的美国节点
+    "67.217.62.123",   // 延迟高的新泽西节点
+    // 可以在这里继续追加你测速发现超时的 IP
+];
 
 let filtered = list.filter(node => {
     if (!node || !node.name) return false;
@@ -35,43 +43,28 @@ let filtered = list.filter(node => {
     const name = String(node.name).trim();
     const server = String(node.server || '').trim();
 
-    // 1. IPv6 过滤
+    // 1. 检查服务器 IP 是否在黑名单中
+    if (badServerBlacklist.includes(server)) {
+        return false;
+    }
+
+    // 2. IPv6 过滤
     if (server.includes('[') || (server.match(/:/g) || []).length >= 2 || /ipv6/i.test(name)) {
         return false;
     }
 
-    // 2. 广告、错误、回国关键词过滤
+    // 3. 广告、错误、回国关键词过滤
     if (excludeNameRegex.test(name) || excludeErrorRegex.test(name) || excludeReturnRegex.test(name)) {
         return false;
     }
 
-    // 3. 服务器地址异常拦截
+    // 4. 服务器地址异常拦截
     if (!server || server === '127.0.0.1' || server === 'localhost' || server.includes('0.0.0.0')) {
         return false;
     }
 
-    // 4. 端口异常拦截
+    // 5. 端口异常拦截
     if (node.port && (Number(node.port) <= 0 || Number(node.port) > 65535)) {
-        return false;
-    }
-
-    // ==================== 【新增核心：延迟与超时过滤】 ====================
-    // 检查节点自身携带的延迟属性（Sub-Store 测速后通常会带 history.delay 或 delay 字段）
-    let currentDelay = null;
-    if (node.history && typeof node.history.delay === 'number') {
-        currentDelay = node.history.delay;
-    } else if (typeof node.delay === 'number') {
-        currentDelay = node.delay;
-    }
-
-    // 如果节点带有延迟数据，且延迟大于 400ms，直接过滤掉！
-    if (currentDelay !== null && currentDelay > 400) {
-        return false;
-    }
-
-    // 如果节点明确标记了超时或延迟为 0（代表死节点），也可以在这里拦截
-    // (部分客户端测速无响应时，delay 会表现为 0 或极大值)
-    if (currentDelay === 0) {
         return false;
     }
 
