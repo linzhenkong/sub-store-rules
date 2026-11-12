@@ -1,4 +1,4 @@
-// Sub-Store 终极清洗与过滤脚本（增强测速与超时剔除）
+// Sub-Store 终极严格清洗与过滤脚本（过滤超时、高延迟及未测速节点）
 let list = [];
 
 if (typeof $nodes !== 'undefined' && Array.isArray($nodes)) {
@@ -35,22 +35,21 @@ const filtered = list.filter(node => {
         return false;
     }
 
-    // 3. 【严格延迟过滤】
-    // 如果节点包含历史延迟数据，进行检查：
-    if (typeof node.delay !== 'undefined' && node.delay !== null) {
+    // 3. 【严格延迟与未测速过滤】
+    // 检查节点是否带有有效的延迟数据
+    if (typeof node.delay === 'undefined' || node.delay === null) {
+        // 如果没有延迟数据（未测速节点），直接过滤掉！
+        return false;
+    } else {
         const delay = Number(node.delay);
-        // 延迟大于 400ms，或者等于 0（代表测速失败/超时），直接剔除
+        // 如果延迟无效（<=0）、超时、或者大于 400ms，直接过滤
         if (isNaN(delay) || delay <= 0 || delay > 400) {
             return false;
         }
-    } else {
-        // 【核心优化】：如果刚拉取时还没有延迟数据（多见于未测速的新节点），
-        // 默认保留它们让客户端后续测速；如果你希望极其严格、没测过速的也直接过滤，
-        // 可以把下面这行 return false 解开注释。当前策略是：有明确延迟且大于400的才杀。
-        // return false; 
     }
 
     return true;
 });
 
+// 防全空保护
 return filtered.length > 0 ? filtered : list;
