@@ -24,7 +24,7 @@ if (!Array.isArray(list) || list.length === 0) {
     return typeof $nodes !== 'undefined' ? $nodes : (typeof proxies !== 'undefined' ? proxies : []);
 }
 
-// ==================== 第一部分：高强度垃圾、广告与死节点过滤（不一刀切好节点） ====================
+// ==================== 第一部分：高强度垃圾、广告与死节点过滤 ====================
 const excludeNameRegex = /(到期|剩余|流量|官网|网址|联系|发布页|客服|重置|过期|测速|群|Telegram|TG|VIP|电报|更新|日期|免费VPN|free-nodes|请加)/i;
 const excludeErrorRegex = /(timeout|error|403|forbidden|blocked|1016|failed|refused|unreachable|0ms|nan|offline|down)/i;
 const excludeReturnRegex = /(回国|大陆专用|解锁CN|学术|教育网)/i;
@@ -35,7 +35,7 @@ let filtered = list.filter(node => {
     const name = String(node.name).trim();
     const server = String(node.server || '').trim();
 
-    // 1. IPv6 过滤（若不需要可自行注释，目前按标准过滤）
+    // 1. IPv6 过滤
     if (server.includes('[') || (server.match(/:/g) || []).length >= 2 || /ipv6/i.test(name)) {
         return false;
     }
@@ -61,7 +61,7 @@ let filtered = list.filter(node => {
 
 // ==================== 第二部分：剥离旧编号、城市映射与规范重命名 ====================
 const addflag = true;                   // 开启加国旗
-const FGF = "                     // 国旗与名字之间的空格（绝无下划线）
+const FGF = " ";                        // 国旗与名字之间的空格（无下划线）
 const maxCount = 50;                    // 严格限制输出最多 50 个节点
 
 const FG = ['🇭🇰','🇲🇴','🇹🇼','🇯🇵','🇰🇷','🇸🇬','🇺🇸','🇬🇧','🇫🇷','🇩🇪','🇦🇺','🇦🇪','🇦🇫','🇦🇱','🇩🇿','🇦🇴','🇦🇷','🇦🇲','🇦🇹','🇦🇿','🇧🇭','🇧🇩','🇧🇾','🇧🇪','🇧🇿','🇧🇯','🇧🇹','🇧🇴','🇧🇦','🇧🇼','🇧🇷','🇻🇬','🇧🇳','🇧🇬','🇧🇫','🇧🇮','🇰🇭','🇨🇲','🇨🇦','🇨🇻','🇰🇾','🇨🇫','🇹🇩','🇨🇱','🇨🇴','🇰🇲','🇨🇬','🇨🇩','🇨🇷','🇭🇷','🇨🇾','🇨🇿','🇩🇰','🇩🇯','🇩🇴','🇪🇨','🇪🇬','🇸🇻','🇬🇶','🇪🇷','🇪🇪','🇪🇹','🇫🇯','🇫🇮','🇬🇦','🇬🇲','🇬🇪','🇬🇭','🇬🇷','🇬🇱','🇬🇹','🇬🇳','🇬🇾','🇭🇹','🇭🇳','🇭🇺','🇮🇸','🇮🇳','🇮🇩','🇮🇷','🇮🇶','🇮🇪','🇮🇲','🇮🇱','🇮🇹','🇨🇮','🇯🇲','🇯🇴','🇰🇿','🇰🇪','🇰🇼','🇰🇬','🇱🇦','🇱🇻','🇱🇧','🇱🇸','🇱🇷','🇱🇾','🇱🇹','🇱🇺','🇲🇰','🇲🇬','🇲🇼','🇲🇾','🇲🇻','🇲🇱','🇲🇹','🇲🇷','🇲🇺','🇲🇽','🇲🇩','🇲🇨','🇲🇳','🇲🇪','🇲🇦','🇲🇿','🇲🇲','🇳🇦','🇳🇵','🇳🇱','🇳🇿','🇳🇮','🇳🇪','🇳🇬','🇰🇵','🇳🇴','🇴🇲','🇵🇰','🇵🇦','🇵🇾','🇵🇪','🇵🇭','🇵🇹','🇵🇷','🇶🇦','🇷🇴','🇷🇺','🇷🇼','🇸🇲','🇸🇦','🇸🇳','🇷🇸','🇸🇱','🇸🇰','🇸🇮','🇸🇴','🇿🇦','🇪🇸','🇱🇰','🇸🇩','🇸🇷','🇸🇿','🇸🇪','🇨🇭','🇸🇾','🇹🇯','🇹🇿','🇹🇭','🇹🇬','🇹🇴','🇹🇹','🇹🇳','🇹🇷','🇹🇲','🇻🇮','🇺🇬','🇺🇦','🇺🇾','🇺🇿','🇻🇪','🇻🇳','🇾🇪','🇿🇲','🇿🇼','🇦🇩','🇷🇪','🇵🇱','🇬🇺','🇻🇦','🇱🇮','CW','🇸🇨','🇦🇶','🇬🇮','🇨🇺','🇫🇴','🇦🇽','BM','TL'];
@@ -78,7 +78,6 @@ const retainKeywords = ["原生", "GPT", "NF", "IPLC", "IEPL"];
 filtered.forEach((e) => {
     let rawName = e.name || "";
     
-    // 深度清洗：剥离国旗、原有的旧编号 (01) 或末尾数字，以及各种多余杂质符号
     let cleanName = rawName.replace(/[\uD83C[\uDDE0-\uDDFF]\uD83C[\uDDE0-\uDDFF]/g, "")
                           .replace(/\s*\(\d+\)/g, "")
                           .replace(/\s*\d+$/, "")
@@ -86,8 +85,6 @@ filtered.forEach((e) => {
                           .trim();
 
     let matchedCountry = "";
-    
-    // 1. 匹配标准国家名
     for (let zhKey of ZH) {
         if (zhKey !== "-" && cleanName.includes(zhKey)) {
             matchedCountry = zhKey;
@@ -95,7 +92,6 @@ filtered.forEach((e) => {
         }
     }
 
-    // 2. 匹配城市名并映射到国家
     if (!matchedCountry) {
         for (let city in cityToCountry) {
             if (cleanName.includes(city)) {
@@ -105,7 +101,6 @@ filtered.forEach((e) => {
         }
     }
 
-    // 3. 提取保留标签（如 IPLC、原生等）
     let foundTags = [];
     retainKeywords.forEach(tag => {
         if (new RegExp(tag, 'i').test(cleanName)) {
@@ -116,7 +111,6 @@ filtered.forEach((e) => {
         foundTags.push("IPLC");
     }
 
-    // 4. 组装规范名称
     if (matchedCountry) {
         let flag = "";
         if (addflag) {
@@ -132,7 +126,6 @@ filtered.forEach((e) => {
     }
 });
 
-
 // ==================== 第三部分：统一整洁编号与 50 节点截断 ====================
 const nameCountMap = {};
 filtered.forEach((e) => {
@@ -145,7 +138,6 @@ filtered.forEach((e) => {
     e.name = `${e.name} (${seq})`;
 });
 
-// 严格限制最终输出不超过 50 个节点
 const finalResult = filtered.slice(0, maxCount);
 
 return finalResult.length > 0 ? finalResult : list;
